@@ -27,4 +27,5 @@ ys = range(-5, 5, length=200)
 zs = [field_real(x, y) for x in xs, y in ys]
 
 fig, ax, hm = heatmap(xs, ys, zs, colormap=:winter)
+Colorbar(fig[:, end+1], hm)
 fig
