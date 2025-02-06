@@ -1,5 +1,5 @@
 #=
-# fig2_11.jl
+# qpgreen.jl
 # 
 # Plot the real part of the quasi-periodic Green functions
 # by Ewald's method
