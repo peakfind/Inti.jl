@@ -5,11 +5,6 @@ using SpecialFunctions: expint, erfc
 
 Compute the quasi-periodic Green functions by Ewald's method
 
-TODO: 
-     1. Numerical Stability: sqrt ?
-     2. Precomputation: Cache factorials, powers, and phase factorials
-     3. Maybe parallelize the code
-
 # Arguments
 
 - `k`: the wave number
