@@ -30,7 +30,8 @@ function ewald(x, y, k, α, d, a, N, M, J)
     for n in -N:N
         # Precompute the reusable constants
         αₙ = α + n*p
-        γₙ = αₙ^2 >= k^2 ? sqrt(αₙ^2 - k^2) : -im*sqrt(k^2 - αₙ^2)
+        # γₙ = αₙ^2 >= k^2 ? sqrt(αₙ^2 - k^2) : -im*sqrt(k^2 - αₙ^2)
+        γₙ = -im*sqrt(Complex(k^2 - αₙ^2))
         carg = γₙ*d/(2a)
         arg1 = carg + q*y
         arg2 = carg - q*y
