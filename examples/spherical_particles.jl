@@ -33,55 +33,96 @@
 
 =#
 
-using GLMakie
+#= 
+# Visualize the scattered field
+# xs = range(-3*π, 3*π, 100)
+# ys = range(-3*π, 3*π, 100)
+# uˢ = map(, Iterators.product(xs, ys))
+# uⁱ
+# uᵗ = uⁱ + uˢ
+# fig, ax, hm = heatmap(xs, ys, , colormap = :inferno)
+=#
+
 using Inti
 using StaticArrays
-using Meshes
 using LinearAlgebra
+using GLMakie
+include("ewald.jl")
 
-# Set medium parameters
-# ω = 1
-# ϵ₁ = 1
-# μ₁ = 1 
-# ϵ₂ = 5
-# μ₂ = 1
-# θ = pi/8
+struct Medium
+   ϵ::Float64
+   μ::Float64
+end    
 
-# Get the wavenumbers
-# k₁ = ω*sqrt(ϵ₁*μ₁)
-# k₂ = ω*sqrt(ϵ₂*μ₂)
+function get_wavenumber(ω, m::Medium)
+   return ω*sqrt(m.ϵ*m.μ)
+end   
 
-# α = k₁*sin(θ)
-# β = k₁*cos(θ)
-
-# xs = LinRange(-3*pi, 3*pi, 100)
-# ys = LinRange(-3*pi, 3*pi, 100)
-# u = [3*cos(α*x - β*y) for x in xs, y in ys]
-
-# surface(xs, ys, u)
+Ω₁ = Medium(1, 1)
+Ω₂ = Medium(5, 1)
+ω = 1   # frequency
+θ = π/8 # incident angle
+k₁ = get_wavenumber(ω, Ω₁)
+k₂ = get_wavenumber(ω, Ω₂)
+α = k₁*sin(θ)
+β = k₁*cos(θ)
+d = 1 # period
 
 # Create a mesh for the geometry
-∂Ω = Inti.parametric_curve(θ->SVector(0.4*cos(θ), 0.4*sin(θ)), 0.0, 2*pi, labels = ["∂Ω"])
-msh = Inti.meshgen(∂Ω; meshsize = 0.05)
-viz(msh)
+∂Ω₂ = Inti.parametric_curve(θ->SVector(0.4*cos(θ), 0.4*sin(θ)), 0.0, 2π, labels = ["∂Ω₂"])
+msh = Inti.meshgen(∂Ω₂; meshsize = π/8)
 
 # Create a quadrature
 Q = Inti.Quadrature(msh; qorder = 3)
 
-# Assemble the Matrix and rhs vector
-# using single_layer or something else to construct discrete integral operator
-
-# Create the block operator
-
-# solve the density function
-
-# Visualize the scattered field
-xs = range(-3*π, 3*π, 100)
-ys = range(-3*π, 3*π, 100)
-uˢ = map(, Iterators.product(xs, ys))
-# uⁱ
-# uᵗ = uⁱ + uˢ
-fig, ax, hm = heatmap(xs, ys, , colormap = :inferno)
-
-function quasi_periodic_helmoltz()
+# Construct rhs 
+rhs₁ = map(Q) do q
+   x = q.coords
+   return 3*exp(im*(α*x[1] - β*x[2]))
 end
+
+rhs₂ = map(Q) do q
+    x = q.coords
+    ν = q.normal
+    return 3*exp(im*(α*x[1] - β*x[2]))*im*(α*ν[1] - β*ν[2])/Ω₁.μ
+end
+
+append!(rhs₁, rhs₂)
+
+# Integral operators
+# quasi-periodic Green functions
+function quasi_periodic_helmholtz(target, source, k, α, d)
+   t = Inti.coords(target)
+   s = Inti.coords(source)
+   dist = norm(t - s)
+   # Parameters used by Ewald's method
+   a = 
+   N = 
+   M = 
+   J = 
+
+   # the singularity at t = s needs to be handled separately, 
+   # so just put a zero now
+   if dist == 0
+      return zero(ComplexF64) 
+   else 
+      return ewald() # TODO:
+   end
+end
+
+# Single layer operators
+G₁ = let k = k₁, α = α, d = d
+   (t, s) -> quasi_periodic_helmholtz(t, s, k, α, d)
+end
+G₂ = let k = k₂
+   (t, s) -> quasi_periodic_helmholtz(t, s, k)
+end
+S₁ = Inti.IntegralOperator(G₁, Q, Q)
+S₂ = Inti.IntegralOperator(G₂, Q, Q)
+
+# Adjoint double layer operators
+
+
+A = []
+# Solve the linear system
+φ = A \ rhs₁
