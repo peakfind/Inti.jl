@@ -46,7 +46,7 @@
 using Inti
 using StaticArrays
 using LinearAlgebra
-using GLMakie
+# using GLMakie
 include("ewald.jl")
 
 struct Medium
@@ -70,7 +70,7 @@ d = 1 # period
 
 # Create a mesh for the geometry
 ∂Ω₂ = Inti.parametric_curve(θ->SVector(0.4*cos(θ), 0.4*sin(θ)), 0.0, 2π, labels = ["∂Ω₂"])
-msh = Inti.meshgen(∂Ω₂; meshsize = π/8)
+msh = Inti.meshgen(∂Ω₂; meshsize = π/16)
 
 # Create a quadrature
 Q = Inti.Quadrature(msh; qorder = 3)
@@ -89,24 +89,23 @@ end
 
 append!(rhs₁, rhs₂)
 
-# Integral operators
 # quasi-periodic Green functions
 function quasi_periodic_helmholtz(target, source, k, α, d)
    t = Inti.coords(target)
    s = Inti.coords(source)
    dist = norm(t - s)
    # Parameters used by Ewald's method
-   a = 
-   N = 
-   M = 
-   J = 
+   a = sqrt(π)/d # TBD
+   N = 5
+   M = 5
+   J = 5
 
    # the singularity at t = s needs to be handled separately, 
    # so just put a zero now
    if dist == 0
       return zero(ComplexF64) 
    else 
-      return ewald() # TODO:
+      return ewald(t[1] - s[1], t[2] - s[2], k, α, d, a, N, M, J) # TODO:
    end
 end
 
@@ -114,15 +113,44 @@ end
 G₁ = let k = k₁, α = α, d = d
    (t, s) -> quasi_periodic_helmholtz(t, s, k, α, d)
 end
-G₂ = let k = k₂
-   (t, s) -> quasi_periodic_helmholtz(t, s, k)
+G₂ = let k = k₂, α = α, d = d
+   (t, s) -> quasi_periodic_helmholtz(t, s, k, α, d)
 end
 S₁ = Inti.IntegralOperator(G₁, Q, Q)
 S₂ = Inti.IntegralOperator(G₂, Q, Q)
 
+# Compression (here we only use assemble_matrix to return a dense Matrix)
+S₁₁ = Inti.assemble_matrix(S₂)
+S₁₂ = Inti.assemble_matrix(S₁)
+
+# Correction
+δS₁₁ = Inti.adaptive_correction(S₂, tol=1e-4)
+δS₁₂ = Inti.adaptive_correction(S₁, tol=1e-4) 
+axpy!(1.0, δS₁₁, S₁₁)
+axpy!(1.0, δS₁₂, S₁₂)
+
+# derivatives of quasi-periodic green functions
+function gradx_quasi_periodic_helmholtz(target, source, k, α, d)
+   t = Inti.coords(target)
+   s = Inti.coords(source)
+   νₜ = Inti.normal(target)
+
+   # Parameters used by Ewald's method
+   a = sqrt(π)/d # TBD
+   N = 5
+   M = 5
+   J = 5
+
+   # the singularity
+   return 
+end
+
 # Adjoint double layer operators
 
+# Compression
 
-A = []
+# Correction
+
+# A = []
 # Solve the linear system
-φ = A \ rhs₁
+# φ = A \ rhs₁
