@@ -11,7 +11,7 @@ abstract type ReferenceQuadrature{D} end
 """
     domain(q::ReferenceQuadrature)
 
-The domain of integratino for quadrature rule `q`.
+The domain of integration for quadrature rule `q`.
 """
 domain(q::ReferenceQuadrature{D}) where {D} = D()
 
