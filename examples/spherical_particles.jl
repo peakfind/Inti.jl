@@ -52,7 +52,7 @@ include("ewald.jl")
 struct Medium
    ϵ::Float64
    μ::Float64
-end    
+end  
 
 function get_wavenumber(ω, m::Medium)
    return ω*sqrt(m.ϵ*m.μ)
@@ -70,7 +70,7 @@ d = 1 # period
 
 # Create a mesh for the geometry
 ∂Ω₂ = Inti.parametric_curve(θ->SVector(0.4*cos(θ), 0.4*sin(θ)), 0.0, 2π, labels = ["∂Ω₂"])
-msh = Inti.meshgen(∂Ω₂; meshsize = π/16)
+msh = Inti.meshgen(∂Ω₂; meshsize = π/6)
 
 # Create a quadrature
 Q = Inti.Quadrature(msh; qorder = 3)
@@ -87,6 +87,7 @@ rhs₂ = map(Q) do q
     return 3*exp(im*(α*x[1] - β*x[2]))*im*(α*ν[1] - β*ν[2])/Ω₁.μ
 end
 
+# append rhs₂ to rhs₁
 append!(rhs₁, rhs₂)
 
 # quasi-periodic Green functions
@@ -105,7 +106,7 @@ function quasi_periodic_helmholtz(target, source, k, α, d)
    if dist == 0
       return zero(ComplexF64) 
    else 
-      return ewald(t[1] - s[1], t[2] - s[2], k, α, d, a, N, M, J) # TODO:
+      return ewald(t[1] - s[1], t[2] - s[2], k, α, d, a, N, M, J)
    end
 end
 
@@ -119,7 +120,7 @@ end
 S₁ = Inti.IntegralOperator(G₁, Q, Q)
 S₂ = Inti.IntegralOperator(G₂, Q, Q)
 
-# Compression (here we only use assemble_matrix to return a dense Matrix)
+# Compression (here we only use assemble_matrix() to return a dense Matrix)
 S₁₁ = Inti.assemble_matrix(S₂)
 S₁₂ = Inti.assemble_matrix(S₁)
 
@@ -134,6 +135,7 @@ function gradx_quasi_periodic_helmholtz(target, source, k, α, d)
    t = Inti.coords(target)
    s = Inti.coords(source)
    νₜ = Inti.normal(target)
+   dist = norm(t - s)
 
    # Parameters used by Ewald's method
    a = sqrt(π)/d # TBD
@@ -142,15 +144,35 @@ function gradx_quasi_periodic_helmholtz(target, source, k, α, d)
    J = 5
 
    # the singularity
-   return 
+   ∇G = gradx_ewald(t[1] - s[1], t[2] - s[2], k, α, d, a, N, M, J)
+   if dist == 0
+      return zero(ComplexF64)
+   else
+      return dot(∇G, νₜ)
+   end 
 end
 
 # Adjoint double layer operators
+∂νG₁ = let k = k₁, α = α, d = d
+   (t, s) -> gradx_quasi_periodic_helmholtz(t, s, k, α, d)
+end
+∂νG₂ = let k = k₂, α = α, d = d
+   (t, s) -> gradx_quasi_periodic_helmholtz(t, s, k, α, d)
+end
+S′₁ = Inti.IntegralOperator(∂νG₁, Q, Q)
+S′₂ = Inti.IntegralOperator(∂νG₂, Q, Q)
 
 # Compression
+S₂₁ = Inti.assemble_matrix(S′₂)
+S₂₂ = Inti.assemble_matrix(S′₁)
 
 # Correction
+δS₂₁ = 
+δS₂₂ =  
+axpy!(1.0, δS₂₁, S₂₁)
+axpy!(1.0, δS₂₂, S₂₂)
 
-# A = []
+A = [S₁₁ -S₁₂; S₂₁/Ω₂.μ -S₂₂/Ω₁.μ]
+
 # Solve the linear system
-# φ = A \ rhs₁
+φ = A \ rhs₁
