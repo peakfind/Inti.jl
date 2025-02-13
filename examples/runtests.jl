@@ -1,5 +1,6 @@
 using Test
 include("ewald.jl")
+include("lattice_sum.jl")
 
 """
 Tests for the function ewald(x, y, k, α, d, a, N, M, J)
@@ -75,4 +76,17 @@ Tests for the function ewald(x, y, k, α, d, a, N, M, J)
         @test ewald(x, 0.5*d, k, α, d, 2, 3, 2, 7) ≈ 0.3596087433 − 0.04626396800im atol=1e-10
     end
 end
+
+@testset verbose = true "Numerical results for lattice sum in Linton1998" begin
+    @testset "Tests for Table 2" begin
+        
+    end 
+    @testset "Tests for Table 3" begin
+        
+    end 
+    @testset "Tests for Table 4" begin
+        
+    end  
+end
+
 nothing
