@@ -33,7 +33,7 @@ function field_imag(x, y)
     return imag(ewald(x, y, k, α, d, a, N, M, J))
 end
 
-function grad1_field_real(x, y)
+function gradx1_field_real(x, y)
     k = 2 + 0.5im # wave number
     α = π/8       # quasi-momentum
     a = sqrt(π)   # parameter introduced by Ewald's method
@@ -46,7 +46,7 @@ function grad1_field_real(x, y)
     return real(∇G[1])
 end
 
-function grad2_field_real(x, y)
+function gradx2_field_real(x, y)
     k = 2 + 0.5im # wave number
     α = π/8       # quasi-momentum
     a = sqrt(π)   # parameter introduced by Ewald's method
@@ -59,7 +59,7 @@ function grad2_field_real(x, y)
     return real(∇G[2])
 end
 
-function grad1_field_imag(x, y)
+function gradx1_field_imag(x, y)
     k = 2 + 0.5im # wave number
     α = π/8       # quasi-momentum
     a = sqrt(π)   # parameter introduced by Ewald's method
@@ -72,7 +72,7 @@ function grad1_field_imag(x, y)
     return imag(∇G[1])
 end
 
-function grad2_field_imag(x, y)
+function gradx2_field_imag(x, y)
     k = 2 + 0.5im # wave number
     α = π/8       # quasi-momentum
     a = sqrt(π)   # parameter introduced by Ewald's method
@@ -85,14 +85,42 @@ function grad2_field_imag(x, y)
     return imag(∇G[2])
 end
 
+function grady1_field_real(x, y)
+    k = 2 + 0.5im # wave number
+    α = π/8       # quasi-momentum
+    a = sqrt(π)   # parameter introduced by Ewald's method
+    d = 1         # period
+    N = 5
+    M = 5
+    J = 10
+    ∇G = grady_ewald(x, y, k, α, d, a, N, M, J)
+
+    return real(∇G[1])
+end
+
+function grady2_field_real(x, y)
+    k = 2 + 0.5im # wave number
+    α = π/8       # quasi-momentum
+    a = sqrt(π)   # parameter introduced by Ewald's method
+    d = 1         # period
+    N = 5
+    M = 5
+    J = 10
+    ∇G = grady_ewald(x, y, k, α, d, a, N, M, J)
+
+    return real(∇G[2])
+end
+
 xs = range(-5, 5, length=200)
 ys = range(-5, 5, length=200)
 ℜG = [field_real(x, y) for x in xs, y in ys]
 ℑG = [field_imag(x, y) for x in xs, y in ys]
-ℜ∂G1 = [grad1_field_real(x, y) for x in xs, y in ys]
-ℜ∂G2 = [grad2_field_real(x, y) for x in xs, y in ys]
-ℑ∂G1 = [grad1_field_imag(x, y) for x in xs, y in ys]
-ℑ∂G2 = [grad2_field_imag(x, y) for x in xs, y in ys]
+ℜ∂G1 = [gradx1_field_real(x, y) for x in xs, y in ys]
+ℜ∂G2 = [gradx2_field_real(x, y) for x in xs, y in ys]
+ℑ∂G1 = [gradx1_field_imag(x, y) for x in xs, y in ys]
+ℑ∂G2 = [gradx2_field_imag(x, y) for x in xs, y in ys]
+ℜ∂yG1 = [grady1_field_real(x, y) for x in xs, y in ys]
+ℜ∂yG2 = [grady2_field_real(x, y) for x in xs, y in ys]
 
 fig = Figure()
 ax₁₁ = Axis(fig[1, 1], title = L"$\Re G$")
@@ -101,10 +129,14 @@ ax₂₁ = Axis(fig[2, 1], title = L"\Re\left(\partial_{1}G\right)")
 ax₂₂ = Axis(fig[2, 2], title = L"\Re\left(\partial_{2}G\right)")
 ax₃₁ = Axis(fig[3, 1], title = L"\Im\left(\partial_{1}G\right)")
 ax₃₂ = Axis(fig[3, 2], title = L"\Im\left(\partial_{2}G\right)")
+ax₄₁ = Axis(fig[4, 1], title = L"\Re\left(\partial_{y1}G\right)")
+ax₄₂ = Axis(fig[4, 2], title = L"\Re\left(\partial_{y2}G\right)")
 heatmap!(ax₁₁, xs, ys, ℜG, colormap=:winter)
 heatmap!(ax₁₂, xs, ys, ℑG, colormap=:winter)
 heatmap!(ax₂₁, xs, ys, ℜ∂G1, colormap=:winter)
 heatmap!(ax₂₂, xs, ys, ℜ∂G2, colormap=:winter)
 heatmap!(ax₃₁, xs, ys, ℑ∂G1, colormap=:winter)
 heatmap!(ax₃₂, xs, ys, ℑ∂G2, colormap=:winter)
+heatmap!(ax₄₁, xs, ys, ℜ∂yG1, colormap=:winter)
+heatmap!(ax₄₂, xs, ys, ℜ∂yG2, colormap=:winter)
 fig
